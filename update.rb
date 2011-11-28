@@ -5,57 +5,57 @@ require 'erb'
 require 'yaml'
 
 def build_used_package_list(source_files)
-	source_files.map do |source_file|
-		File.read(source_file).split("\n").reject do |l|
-			l.strip.start_with?('#') or l.strip == ""
-		end
-	end.flatten
+  source_files.map do |source_file|
+    File.read(source_file).split("\n").reject do |l|
+      l.strip.start_with?('#') or l.strip == ""
+    end
+  end.flatten
 end
 
 used_packages = {
-	:full => build_used_package_list(['grml-live/etc/grml/fai/config/package_config/GRMLBASE', 'grml-live/etc/grml/fai/config/package_config/GRML_FULL']),
+  :full => build_used_package_list(['grml-live/etc/grml/fai/config/package_config/GRMLBASE', 'grml-live/etc/grml/fai/config/package_config/GRML_FULL']),
 }
 
 def build_package_list(packages, used)
-	data = {}
-	packages.each do |pkg|
-		next if not File.exists?(File.join(pkg, 'debian'))
-		begin
-			g = Git.open(working_dir = pkg)
-			#g.pull(Git::Repo, Git::Branch) # fetch and a merge
-		rescue ArgumentError
-			g = Git.bare(working_dir = pkg)
-		end
+  data = {}
+  packages.each do |pkg|
+    next if not File.exists?(File.join(pkg, 'debian'))
+    begin
+      g = Git.open(working_dir = pkg)
+      #g.pull(Git::Repo, Git::Branch) # fetch and a merge
+    rescue ArgumentError
+      g = Git.bare(working_dir = pkg)
+    end
 
-		current_head = g.gcommit('HEAD')
-		next if not current_head.parent
+    current_head = g.gcommit('HEAD')
+    next if not current_head.parent
 
-		p = {
-			:head_is_tagged => false,
-			:used => {},
-			:name => pkg,
-			:version => nil,
-			:has_tags => false,
-		}
-		used.each do |dist,l|
-			p[:used][dist] = l.include?(pkg)
-		end
+    p = {
+      :head_is_tagged => false,
+      :used => {},
+      :name => pkg,
+      :version => nil,
+      :has_tags => false,
+    }
+    used.each do |dist,l|
+      p[:used][dist] = l.include?(pkg)
+    end
 
-		for tag in g.tags.reverse
-			p[:has_tags] = true
-			t = g.gcommit(tag.name)
-			next if not t.parent
-			#$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
-			if t.parent.sha === current_head.parent.sha
-				p[:head_is_tagged] = true
-				p[:version] = tag.name
-				break
-			end
-		end
+    for tag in g.tags.reverse
+      p[:has_tags] = true
+      t = g.gcommit(tag.name)
+      next if not t.parent
+      #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
+      if t.parent.sha === current_head.parent.sha
+        p[:head_is_tagged] = true
+        p[:version] = tag.name
+        break
+      end
+    end
 
-		data[pkg] = p
-	end
-	data.values.sort { |x,y| x[:name] <=> y[:name] }
+    data[pkg] = p
+  end
+  data.values.sort { |x,y| x[:name] <=> y[:name] }
 end
 
 packages = build_package_list(ARGV, used_packages)
