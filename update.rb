@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require 'git'
-require 'builder'
 require 'erb'
 require 'yaml'
 
