@@ -2,6 +2,10 @@
 require 'git'
 require 'erb'
 require 'yaml'
+require 'net/http'
+require 'uri'
+require 'zlib'
+require 'yaml'
 
 def build_used_package_list(source_files)
   source_files.map do |source_file|
@@ -11,11 +15,38 @@ def build_used_package_list(source_files)
   end.flatten
 end
 
-used_packages = {
-  :full => build_used_package_list(['grml-live/etc/grml/fai/config/package_config/GRMLBASE', 'grml-live/etc/grml/fai/config/package_config/GRML_FULL']),
-}
+def parse_debian_sources(data)
+  data.split("\n").push('').inject({}) do |pkgs, l|
+    l.rstrip!
+    pkg = pkgs[:_tmp] || {}
+    if pkg[:_tmp]
+      if l[0..0] == ' '
+	pkg[:_tmp][:data] << l.strip
+      else
+	pkg[pkg[:_tmp][:hdr]] = pkg[:_tmp][:data].compact
+	pkg.delete :_tmp
+      end
+    end
+    unless pkg[:_tmp]
+      if l == '':
+	pkgs[pkg['Package'][0]] = pkg
+	pkg = nil
+      else
+	hdr, data = l.strip.split(':', 2)
+	data.strip! unless data.nil?
+	pkg[:_tmp] = {:hdr => hdr, :data => [data]}
+      end
+    end
+    if pkg.nil?
+      pkgs.delete :_tmp
+    else
+      pkgs[:_tmp] = pkg
+    end
+    pkgs
+  end
+end
 
-def build_package_list(packages, used)
+def build_package_list(packages, used, sources)
   data = {}
   packages.each do |pkg|
     next if not File.exists?(File.join(pkg, 'debian'))
@@ -35,9 +66,13 @@ def build_package_list(packages, used)
       :name => pkg,
       :version => nil,
       :has_tags => false,
+      :version_in_repo => nil
     }
     used.each do |dist,l|
       p[:used][dist] = l.include?(pkg)
+    end
+    if sources[pkg]
+      p[:version_in_repo] = sources[pkg]['Version'][0]
     end
 
     for tag in g.tags.reverse
@@ -54,10 +89,17 @@ def build_package_list(packages, used)
 
     data[pkg] = p
   end
-  data.values.sort { |x,y| x[:name] <=> y[:name] }
+  data
 end
 
-packages = build_package_list(ARGV, used_packages)
+def fetch_file(uri)
+  response = Net::HTTP.get_response(URI.parse(uri))
+  body = response.body
+  if uri.match(/\.gz$/)
+    body = Zlib::GzipReader.new(StringIO.new(body.to_s)).read
+  end
+  body
+end
 
 template = ERB.new <<-EOF
 <!doctype html>
@@ -74,9 +116,11 @@ template = ERB.new <<-EOF
   <div id="main">
   <table>
   <tr>
-  <th>Package</th><th>Git</th><th>Download</th><th>Fresh?</th><th>In FULL?</th>
+  <th>Package</th><th>Git</th><th>Download</th><th>Fresh?</th><th>grml-testing</th><th>In FULL?</th>
   </tr>
-  <% packages.each do |p| %>
+  <% packages.keys.sort.each do |pn|
+  p = packages[pn]
+  %>
   <tr>
   <td><%= p[:name] %></td>
   <td class="git"><a href="http://git.grml.org/?p=<%= p[:name] %>.git;a=summary">Git</a></td>
@@ -90,6 +134,7 @@ template = ERB.new <<-EOF
   <% else %>
   <td class="error <% if p[:used][:full] %>important<% end %>">Untagged changes</td>
   <% end %>
+  <td><%= p[:version_in_repo] || "" %></td>
   <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
   </tr>
   <% end %>
@@ -100,6 +145,14 @@ template = ERB.new <<-EOF
 </body>
 </html>
 EOF
+
+used_packages = {
+  :full => build_used_package_list(['grml-live/etc/grml/fai/config/package_config/GRMLBASE', 'grml-live/etc/grml/fai/config/package_config/GRML_FULL']),
+}
+sources = parse_debian_sources(fetch_file('http://deb.grml.org/dists/grml-testing/main/source/Sources.gz'))
+
+packages = build_package_list(ARGV, used_packages, sources)
+
 File.open('index.html.new','w') do |f|
   f.write template.result(binding)
 end
