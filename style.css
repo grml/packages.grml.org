@@ -1,0 +1,17 @@
+.ok { color: green; }
+.error { color: red; }
+.important { font-weight: bold; }
+table { border-collapse:collapse; }
+td,th { padding-right: 5px; text-align: left; }
+td { min-width: 100px; }
+td.git, td.download { min-width: 0; }
+tr:nth-child(even) { background-color: #eee; }
+tr:hover { background-color: #ddd; }
+
+body {
+    font-family: Helvetica, Arial; font-size: 12pt;
+    background: url(http://grml.org/img/logo.png) no-repeat;
+    background-position: right top;
+    padding: 10px;
+    padding-top: 0px;
+}
