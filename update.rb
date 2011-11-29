@@ -115,7 +115,6 @@ template = ERB.new <<-EOF
 <body>
   <header>
   <h1>All Grml packages</h1>
-  <p>Last update: <%= Time.now.to_s %></p>
   </header>
   <div id="main">
   <table>
@@ -145,6 +144,7 @@ template = ERB.new <<-EOF
   </table>
   </div>
   <footer>
+  <p>Last update: <%= Time.now.to_s %></p>
   </footer>
 </body>
 </html>
