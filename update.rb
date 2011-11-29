@@ -143,6 +143,9 @@ template = ERB.new <<-EOF
   <% end %>
   </table>
   </div>
+  <div>
+  Other packages: <% other_packages.join(" ") %>
+  </div>
   <footer>
   <p>Last update: <%= Time.now.to_s %></p>
   </footer>
@@ -163,6 +166,7 @@ git_repos = Hash[*(Dir.glob('git/*.git').map do |p| [File.basename(p, '.git'), p
 update_git_repos git_repos
 
 packages = build_package_list(git_repos, used_packages, sources)
+other_packages = (sources.keys - git_repos.keys)
 
 File.open('index.html.new','w') do |f|
   f.write template.result(binding)
