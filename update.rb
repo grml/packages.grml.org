@@ -100,7 +100,7 @@ end
 
 def update_git_repos(git_repos)
   git_repos.each do |name, path|
-    out = %x{cd #{path} && git remote update --prune}
+    out = %x{cd #{path} && git remote update --prune 2>&1}
     puts "#{name}: " + out if DEBUG
   end
 end
