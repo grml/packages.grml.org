@@ -7,9 +7,11 @@ require 'uri'
 require 'zlib'
 require 'yaml'
 
-def build_used_package_list(source_files)
-  source_files.map do |source_file|
-    File.read(source_file).split("\n").reject do |l|
+DEBUG = false
+
+def build_used_package_list(source_uri)
+  source_uri.map do |source_uri|
+    fetch_file(source_uri).split("\n").reject do |l|
       l.strip.start_with?('#') or l.strip == ""
     end
   end.flatten
@@ -46,16 +48,11 @@ def parse_debian_sources(data)
   end
 end
 
-def build_package_list(packages, used, sources)
+def build_package_list(repos, used, sources)
   data = {}
-  packages.each do |pkg|
-    next if not File.exists?(File.join(pkg, 'debian'))
-    begin
-      g = Git.open(working_dir = pkg)
-      #g.pull(Git::Repo, Git::Branch) # fetch and a merge
-    rescue ArgumentError
-      g = Git.bare(working_dir = pkg)
-    end
+  repos.each do |pkg, path|
+    g = Git.bare(working_dir = path)
+    next if not g.ls_tree('HEAD')["tree"].keys.include?("debian")
 
     current_head = g.gcommit('HEAD')
     next if not current_head.parent
@@ -101,6 +98,13 @@ def fetch_file(uri)
   body
 end
 
+def update_git_repos(git_repos)
+  git_repos.each do |name, path|
+    out = %x{cd #{path} && git remote update --prune}
+    puts "#{name}: " + out if DEBUG
+  end
+end
+
 template = ERB.new <<-EOF
 <!doctype html>
 <head>
@@ -116,7 +120,7 @@ template = ERB.new <<-EOF
   <div id="main">
   <table>
   <tr>
-  <th>Package</th><th>Git</th><th>Download</th><th>Fresh?</th><th>grml-testing</th><th>In FULL?</th>
+  <th>Package</th><th>Git</th><th>Download</th><th>Git Fresh?</th><th>grml-testing</th><th>In FULL?</th>
   </tr>
   <% packages.keys.sort.each do |pn|
   p = packages[pn]
@@ -147,11 +151,18 @@ template = ERB.new <<-EOF
 EOF
 
 used_packages = {
-  :full => build_used_package_list(['grml-live/etc/grml/fai/config/package_config/GRMLBASE', 'grml-live/etc/grml/fai/config/package_config/GRML_FULL']),
+  :full => build_used_package_list([
+                                    'http://git.grml.org/?p=grml-live.git;a=blob_plain;f=etc/grml/fai/config/package_config/GRMLBASE',
+                                    'http://git.grml.org/?p=grml-live.git;a=blob_plain;f=etc/grml/fai/config/package_config/GRML_FULL',
+                                   ]),
 }
 sources = parse_debian_sources(fetch_file('http://deb.grml.org/dists/grml-testing/main/source/Sources.gz'))
 
-packages = build_package_list(ARGV, used_packages, sources)
+git_repos = Hash[*(Dir.glob('git/*.git').map do |p| [File.basename(p, '.git'), p] end.flatten)]
+
+update_git_repos git_repos
+
+packages = build_package_list(git_repos, used_packages, sources)
 
 File.open('index.html.new','w') do |f|
   f.write template.result(binding)
