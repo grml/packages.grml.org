@@ -61,9 +61,9 @@ def build_package_list(repos, used, sources)
       :head_is_tagged => false,
       :used => {},
       :name => pkg,
-      :version => nil,
+      :git_version => nil,
       :has_tags => false,
-      :version_in_repo => nil,
+      :repo_version => nil,
       :git_browser => "http://git.grml.org/?p=%s.git;a=summary" % pkg,
       :git_anon => "git://git.grml.org/%s.git" % pkg,
       :repo_url => "http://deb.grml.org/pool/main/%s/%s/" % [pkg[0..0], pkg],
@@ -72,7 +72,7 @@ def build_package_list(repos, used, sources)
       p[:used][dist] = l.include?(pkg)
     end
     if sources[pkg]
-      p[:version_in_repo] = sources[pkg]['Version'][0]
+      p[:repo_version] = sources[pkg]['Version'][0]
       p[:source_name] = sources[pkg]['Package'][0]
     end
 
@@ -83,7 +83,7 @@ def build_package_list(repos, used, sources)
       #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
       if t.parent.sha === current_head.parent.sha
         p[:head_is_tagged] = true
-        p[:version] = tag.name
+        p[:git_version] = tag.name
         break
       end
     end
@@ -123,7 +123,7 @@ template = ERB.new <<-EOF
   <div id="main">
   <table>
   <tr>
-  <th>Package</th><th>Git</th><th>Download</th><th>Git Fresh?</th><th>grml-testing</th><th>In FULL?</th>
+  <th>Package</th><th>Git</th><th>Download</th><th>Git Version</th><th>grml-testing</th><th>In FULL?</th>
   </tr>
   <% packages.keys.sort.each do |pn|
   p = packages[pn]
@@ -137,11 +137,11 @@ template = ERB.new <<-EOF
     <% end %>
   </td>
   <% if p[:head_is_tagged] %>
-  <td class="ok">Version <%= p[:version] %></td>
+  <td class="ok">Version <%= p[:git_version] %></td>
   <% else %>
   <td class="error <% if p[:used][:full] %>important<% end %>">Untagged changes</td>
   <% end %>
-  <td><%= p[:version_in_repo] || "" %></td>
+  <td><%= p[:repo_version] || "" %></td>
   <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
   </tr>
   <% end %>
