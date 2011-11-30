@@ -50,17 +50,7 @@ end
 
 def build_package_list(repos, used, sources)
   data = {}
-  repos.each do |pkg, path|
-    g = Git.bare(working_dir = path)
-    tree = g.ls_tree('HEAD')["tree"]
-    if pkg == 'grml-kernel'
-      tree = g.ls_tree(g.ls_tree("HEAD")["tree"]["linux-3"][:sha])["tree"]
-    end
-    next if not tree.keys.include?("debian")
-
-    current_head = g.gcommit('HEAD')
-    next if not current_head.parent
-
+  (repos.keys + sources.keys).each do |pkg|
     p = {
       :head_is_tagged => false,
       :used => {},
@@ -68,27 +58,46 @@ def build_package_list(repos, used, sources)
       :git_version => nil,
       :has_tags => false,
       :repo_version => nil,
-      :git_browser => "http://git.grml.org/?p=%s.git;a=summary" % pkg,
-      :git_anon => "git://git.grml.org/%s.git" % pkg,
-      :repo_url => "http://deb.grml.org/pool/main/%s/%s/" % [pkg[0..0], pkg],
     }
+
+    begin
+      g = Git.bare(working_dir = repos[pkg])
+      tree = g.ls_tree('HEAD')["tree"]
+      if pkg == 'grml-kernel'
+        tree = g.ls_tree(g.ls_tree("HEAD")["tree"]["linux-3"][:sha])["tree"]
+      end
+      current_head = g.gcommit('HEAD')
+      raise "no head" if not current_head.parent
+      raise "no debian dir in git" if not tree.keys.include?("debian")
+      p.merge!({
+        :git_browser => "http://git.grml.org/?p=%s.git;a=summary" % pkg,
+        :git_anon => "git://git.grml.org/%s.git" % pkg,
+      })
+    rescue Exception
+    end
+
     used.each do |dist,l|
       p[:used][dist] = l.include?(pkg)
     end
     if sources[pkg]
-      p[:repo_version] = sources[pkg]['Version'][0]
-      p[:source_name] = sources[pkg]['Package'][0]
+      p.merge!({
+        :repo_url => "http://deb.grml.org/pool/main/%s/%s/" % [sources[pkg]['Package'][0][0..0], sources[pkg]['Package'][0]],
+        :repo_version => sources[pkg]['Version'][0],
+        :source_name => sources[pkg]['Package'][0],
+      })
     end
 
-    for tag in g.tags.reverse
-      p[:has_tags] = true
-      t = g.gcommit(tag.name)
-      next if not t.parent
-      #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
-      if t.parent.sha === current_head.parent.sha
-        p[:head_is_tagged] = true
-        p[:git_version] = tag.name
-        break
+    if p[:git_anon]
+      for tag in g.tags.reverse
+        p[:has_tags] = true
+        t = g.gcommit(tag.name)
+        next if not t.parent
+        #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
+        if t.parent.sha === current_head.parent.sha
+          p[:head_is_tagged] = true
+          p[:git_version] = tag.name
+          break
+        end
       end
     end
 
@@ -134,12 +143,8 @@ template = ERB.new <<-EOF
   %>
   <tr>
   <td><%= p[:name] %></td>
-  <td class="git"><a href="<%= p[:git_browser] %>">Git</a></td>
-  <td class="download">
-    <% if p[:has_tags] %>
-    <a href="<%= p[:repo_url] %>">Download</a>
-    <% end %>
-  </td>
+  <td class="git"><% if p[:git_browser] %><a href="<%= p[:git_browser] %>">Git</a><% end %></td>
+  <td class="download"><% if p[:has_tags] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
   <% if p[:head_is_tagged] %>
   <td class="ok">Version <%= p[:git_version] %></td>
   <% else %>
