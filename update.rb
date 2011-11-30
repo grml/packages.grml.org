@@ -159,7 +159,14 @@ used_packages = {
                                     'http://git.grml.org/?p=grml-live.git;a=blob_plain;f=etc/grml/fai/config/package_config/GRML_FULL',
                                    ]),
 }
-sources = parse_debian_sources(fetch_file('http://deb.grml.org/dists/grml-testing/main/source/Sources.gz'))
+sources = {}
+parse_debian_sources(fetch_file('http://deb.grml.org/dists/grml-testing/main/source/Sources.gz')).each do |k,v|
+  if v['Vcs-Git'] and v['Vcs-Git'][0]
+    m = v['Vcs-Git'][0].match 'git.grml.org\/(.*).git$'
+    k = m[1] if m
+  end
+  sources[k] = v
+end
 
 git_repos = Hash[*(Dir.glob('git/*.git').map do |p| [File.basename(p, '.git'), p] end.flatten)]
 
