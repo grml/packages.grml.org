@@ -52,7 +52,11 @@ def build_package_list(repos, used, sources)
   data = {}
   repos.each do |pkg, path|
     g = Git.bare(working_dir = path)
-    next if not g.ls_tree('HEAD')["tree"].keys.include?("debian")
+    tree = g.ls_tree('HEAD')["tree"]
+    if pkg == 'grml-kernel'
+      tree = g.ls_tree(g.ls_tree("HEAD")["tree"]["linux-3"][:sha])["tree"]
+    end
+    next if not tree.keys.include?("debian")
 
     current_head = g.gcommit('HEAD')
     next if not current_head.parent
