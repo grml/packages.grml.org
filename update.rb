@@ -63,13 +63,17 @@ def build_package_list(repos, used, sources)
       :name => pkg,
       :version => nil,
       :has_tags => false,
-      :version_in_repo => nil
+      :version_in_repo => nil,
+      :git_browser => "http://git.grml.org/?p=%s.git;a=summary" % pkg,
+      :git_anon => "git://git.grml.org/%s.git" % pkg,
+      :repo_url => "http://deb.grml.org/pool/main/%s/%s/" % [pkg[0..0], pkg],
     }
     used.each do |dist,l|
       p[:used][dist] = l.include?(pkg)
     end
     if sources[pkg]
       p[:version_in_repo] = sources[pkg]['Version'][0]
+      p[:source_name] = sources[pkg]['Package'][0]
     end
 
     for tag in g.tags.reverse
@@ -126,10 +130,10 @@ template = ERB.new <<-EOF
   %>
   <tr>
   <td><%= p[:name] %></td>
-  <td class="git"><a href="http://git.grml.org/?p=<%= p[:name] %>.git;a=summary">Git</a></td>
+  <td class="git"><a href="<%= p[:git_browser] %>">Git</a></td>
   <td class="download">
     <% if p[:has_tags] %>
-    <a href="http://deb.grml.org/pool/main/<%= p[:name][0..0] %>/<%= p[:name] %>/">Download</a>
+    <a href="<%= p[:repo_url] %>">Download</a>
     <% end %>
   </td>
   <% if p[:head_is_tagged] %>
