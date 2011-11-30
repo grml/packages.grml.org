@@ -52,7 +52,7 @@ def build_package_list(repos, used, sources)
   data = {}
   (repos.keys + sources.keys).each do |pkg|
     p = {
-      :head_is_tagged => false,
+      :problem => nil,
       :used => {},
       :name => pkg,
       :git_version => nil,
@@ -88,15 +88,30 @@ def build_package_list(repos, used, sources)
     end
 
     if p[:git_anon]
+      head_is_tagged = false
       for tag in g.tags.reverse
         p[:has_tags] = true
         t = g.gcommit(tag.name)
         next if not t.parent
         #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
         if t.parent.sha === current_head.parent.sha
-          p[:head_is_tagged] = true
+          head_is_tagged = true
           p[:git_version] = tag.name
           break
+        end
+      end
+      if !head_is_tagged
+        p[:problem] = 'Untagged changes'
+      end
+    else
+      p[:problem] = 'Unknown (Missing checkout)'
+    end
+
+    if !p[:problem]
+      if p[:git_version] and p[:repo_version]
+        repo_version = p[:repo_version].gsub('~','_')
+        if (p[:git_version] != repo_version) and (p[:git_version] != 'v'+repo_version)
+          p[:problem] = 'Git/Repo not in sync'
         end
       end
     end
@@ -145,10 +160,10 @@ template = ERB.new <<-EOF
   <td><%= p[:name] %></td>
   <td class="git"><% if p[:git_browser] %><a href="<%= p[:git_browser] %>">Git</a><% end %></td>
   <td class="download"><% if p[:has_tags] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
-  <% if p[:head_is_tagged] %>
+  <% if !p[:problem] %>
   <td class="ok">Version <%= p[:git_version] %></td>
   <% else %>
-  <td class="error <% if p[:used][:full] %>important<% end %>">Untagged changes</td>
+  <td class="error <% if p[:used][:full] %>important<% end %>"><%= p[:problem] %></td>
   <% end %>
   <td><%= p[:repo_version] || "" %></td>
   <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
