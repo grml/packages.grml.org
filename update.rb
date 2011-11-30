@@ -144,7 +144,7 @@ template = ERB.new <<-EOF
   </table>
   </div>
   <div>
-  Other packages: <% other_packages.join(" ") %>
+  Other packages: <%= other_packages.join(" ") %>
   </div>
   <footer>
   <p>Last update: <%= Time.now.to_s %></p>
