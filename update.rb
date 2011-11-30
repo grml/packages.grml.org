@@ -159,7 +159,7 @@ template = ERB.new <<-EOF
   <tr>
   <td><%= p[:name] %></td>
   <td class="git"><% if p[:git_browser] %><a href="<%= p[:git_browser] %>">Git</a><% end %></td>
-  <td class="download"><% if p[:has_tags] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
+  <td class="download"><% if p[:repo_url] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
   <% if !p[:problem] %>
   <td class="ok">Version <%= p[:git_version] %></td>
   <% else %>
