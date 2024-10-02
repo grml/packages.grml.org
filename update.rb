@@ -73,7 +73,8 @@ def build_package_list(repos, used, sources)
         :git_browser => "https://github.com/grml/%s" % pkg,
         :git_anon => "https://github.com/grml/%s.git" % pkg,
       })
-    rescue Exception
+    rescue Exception => error
+      puts "E: inspecting git repo #{repos[pkg]} failed: #{error}"
     end
 
     used.each do |dist,l|
