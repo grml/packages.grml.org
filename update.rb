@@ -70,8 +70,8 @@ def build_package_list(repos, used, sources)
       raise "no head" if not current_head.parent
       raise "no debian dir in git" if not tree.keys.include?("debian")
       p.merge!({
-        :git_browser => "http://git.grml.org/?p=%s.git;a=summary" % pkg,
-        :git_anon => "git://git.grml.org/%s.git" % pkg,
+        :git_browser => "https://github.com/grml/%s" % pkg,
+        :git_anon => "https://github.com/grml/%s.git" % pkg,
       })
     rescue Exception
     end
@@ -81,7 +81,7 @@ def build_package_list(repos, used, sources)
     end
     if sources[pkg]
       p.merge!({
-        :repo_url => "http://deb.grml.org/pool/main/%s/%s/" % [sources[pkg]['Package'][0][0..0], sources[pkg]['Package'][0]],
+        :repo_url => "https://deb.grml.org/pool/main/%s/%s/" % [sources[pkg]['Package'][0][0..0], sources[pkg]['Package'][0]],
         :repo_version => sources[pkg]['Version'][0],
         :source_name => sources[pkg]['Package'][0],
       })
@@ -182,8 +182,8 @@ EOF
 
 used_packages = {
   :full => build_used_package_list([
-                                    'http://git.grml.org/?p=grml-live.git;a=blob_plain;f=etc/grml/fai/config/package_config/GRMLBASE',
-                                    'http://git.grml.org/?p=grml-live.git;a=blob_plain;f=etc/grml/fai/config/package_config/GRML_FULL',
+                                    'http://raw.githubusercontent.com/grml/grml-live/master/etc/grml/fai/config/package_config/GRMLBASE',
+                                    'http://raw.githubusercontent.com/grml/grml-live/master/etc/grml/fai/config/package_config/GRML_FULL',
                                    ]),
 }
 sources = {}
