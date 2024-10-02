@@ -187,7 +187,7 @@ used_packages = {
                                    ]),
 }
 sources = {}
-parse_debian_sources(fetch_file('http://deb.grml.org/dists/grml-testing/main/source/Sources.gz')).each do |k,v|
+parse_debian_sources(fetch_file('https://deb.grml.org/dists/grml-testing/main/source/Sources.gz')).each do |k,v|
   if v['Vcs-Git'] and v['Vcs-Git'][0]
     m = v['Vcs-Git'][0].match 'git.grml.org\/(.*).git$'
     k = m[1] if m
