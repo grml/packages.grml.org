@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby1.8
+#!/usr/bin/env ruby
 require 'git'
 require 'erb'
 require 'yaml'
@@ -22,7 +22,7 @@ def parse_debian_sources(data)
     l.rstrip!
     pkg = pkgs[:_tmp] || {}
     if pkg[:_tmp]
-      if l[0..0] == ' '
+      if l[0..0] == ' ' then
 	pkg[:_tmp][:data] << l.strip
       else
 	pkg[pkg[:_tmp][:hdr]] = pkg[:_tmp][:data].compact
@@ -30,7 +30,7 @@ def parse_debian_sources(data)
       end
     end
     unless pkg[:_tmp]
-      if l == '':
+      if l == '' then
 	pkgs[pkg['Package'][0]] = pkg
 	pkg = nil
       else
@@ -201,13 +201,13 @@ update_git_repos git_repos
 
 packages = build_package_list(git_repos, used_packages, sources)
 
-File.open('index.html.new','w') do |f|
+File.open('htdocs/index.html.new','w') do |f|
   f.write template.result(binding)
 end
-File.open('packages.yaml.new','w') do |f|
+File.open('htdocs/packages.yaml.new','w') do |f|
   f.write packages.to_yaml
 end
 
-FileUtils.mv 'index.html.new', 'index.html'
-FileUtils.mv 'packages.yaml.new', 'packages.yaml'
+FileUtils.mv 'htdocs/index.html.new', 'htdocs/index.html'
+FileUtils.mv 'htdocs/packages.yaml.new', 'htdocs/packages.yaml'
 
