@@ -7,7 +7,7 @@ require 'uri'
 require 'zlib'
 require 'yaml'
 
-DEBUG = false
+DEBUG = true
 
 def build_used_package_list(source_uri)
   source_uri.map do |source_uri|
@@ -60,6 +60,7 @@ def build_package_list(repos, used, sources)
       :repo_version => nil,
     }
 
+    puts "I: inspecting git repo #{repos[pkg]}" if DEBUG
     begin
       g = Git.bare(working_dir = repos[pkg])
       tree = g.ls_tree('HEAD')["tree"]
@@ -117,6 +118,7 @@ def build_package_list(repos, used, sources)
       end
     end
 
+    puts "I: current_head=#{current_head.sha} p=#{p}" if DEBUG
     data[pkg] = p
   end
   data
@@ -133,7 +135,9 @@ end
 
 def update_git_repos(git_repos)
   git_repos.each do |name, path|
-    out = %x{cd #{path} && git remote update --prune 2>&1}
+    # fix git remote config if needed
+    out = %x{cd #{path} && git config remote.origin.fetch 'refs/heads/*:refs/heads/*'}
+    out = %x{cd #{path} && git remote update --prune 2>&1 && git fetch --all --tags 2>&1}
     puts "#{name}: " + out if DEBUG
   end
 end
