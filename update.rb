@@ -156,7 +156,7 @@ template = ERB.new <<-EOF
   <div id="main">
   <table>
   <tr>
-  <th>Package</th><th>Git</th><th>Download</th><th>Git Version</th><th>grml-testing</th><th>In FULL?</th>
+  <th>Package</th><th>Git</th><th>Download</th><th>Status</th><th>Git</th><th>grml-testing</th><th>In FULL?</th>
   </tr>
   <% packages.keys.sort.each do |pn|
   p = packages[pn]
@@ -166,10 +166,11 @@ template = ERB.new <<-EOF
   <td class="git"><% if p[:git_browser] %><a href="<%= p[:git_browser] %>">Git</a><% end %></td>
   <td class="download"><% if p[:repo_url] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
   <% if !p[:problem] %>
-  <td class="ok">Version <%= p[:git_version] %></td>
+  <td class="ok">Pass</td>
   <% else %>
   <td class="error <% if p[:used][:full] %>important<% end %>"><%= p[:problem] %></td>
   <% end %>
+  <td><%= p[:git_version] || "??" %></td>
   <td><%= p[:repo_version] || "" %></td>
   <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
   </tr>
@@ -218,4 +219,3 @@ end
 
 FileUtils.mv 'htdocs/index.html.new', 'htdocs/index.html'
 FileUtils.mv 'htdocs/packages.yaml.new', 'htdocs/packages.yaml'
-
