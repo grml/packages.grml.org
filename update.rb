@@ -98,7 +98,7 @@ def build_package_list(repos, used, sources)
         #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
         if t.parent.sha === current_head.parent.sha
           head_is_tagged = true
-          p[:git_version] = tag.name
+          p[:git_version] = tag.name.gsub('%', ':')
           break
         end
       end
