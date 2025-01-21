@@ -60,7 +60,7 @@ def build_package_list(repos, used, sources)
       :repo_version => nil,
     }
 
-    puts "I: inspecting git repo #{repos[pkg]}" if DEBUG
+    puts "I: inspecting git repo #{repos[pkg]} for pkg #{pkg}" if DEBUG
     begin
       g = Git.bare(working_dir = repos[pkg])
       tree = g.ls_tree('FETCH_HEAD')["tree"]
