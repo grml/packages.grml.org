@@ -63,12 +63,12 @@ def build_package_list(repos, used, sources)
     puts "I: inspecting git repo #{repos[pkg]}" if DEBUG
     begin
       g = Git.bare(working_dir = repos[pkg])
-      tree = g.ls_tree('HEAD')["tree"]
+      tree = g.ls_tree('FETCH_HEAD')["tree"]
       if pkg == 'grml-kernel'
-        tree = g.ls_tree(g.ls_tree("HEAD")["tree"]["linux-3"][:sha])["tree"]
+        tree = g.ls_tree(g.ls_tree("FETCH_HEAD")["tree"]["linux-3"][:sha])["tree"]
       end
-      current_head = g.gcommit('HEAD')
-      raise "no head" if not current_head.parent
+      current_head = g.gcommit('FETCH_HEAD')
+      raise "no FETCH_HEAD" if not current_head.parent
       raise "no debian dir in git" if not tree.keys.include?("debian")
       p.merge!({
         :git_browser => "https://github.com/grml/%s" % pkg,
@@ -95,7 +95,7 @@ def build_package_list(repos, used, sources)
         p[:has_tags] = true
         t = g.gcommit(tag.name)
         next if not t.parent
-        #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} HEAD: #{current_head.parent.sha}"
+        #$stderr.puts "#{pkg}: Checking tag #{tag.name}: tag parent: #{t.parent.sha} head: #{current_head.parent.sha}"
         if t.parent.sha === current_head.parent.sha
           head_is_tagged = true
           p[:git_version] = tag.name.gsub('%', ':')
@@ -135,9 +135,8 @@ end
 
 def update_git_repos(git_repos)
   git_repos.each do |name, path|
-    # fix git remote config if needed
-    out = %x{cd #{path} && git config remote.origin.fetch 'refs/heads/*:refs/heads/*'}
-    out = %x{cd #{path} && git remote update --prune 2>&1 && git fetch --all --tags 2>&1}
+    # Will update FETCH_HEAD and tags only.
+    out = %x{cd #{path} && git fetch --force --prune --refmap='' origin '+HEAD' 'refs/tags/*:refs/tags/*' 2>&1}
     puts "#{name}: " + out if DEBUG
   end
 end
