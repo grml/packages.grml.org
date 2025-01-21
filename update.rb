@@ -118,7 +118,7 @@ def build_package_list(repos, used, sources)
       end
     end
 
-    puts "I: current_head=#{current_head.sha} p=#{p}" if DEBUG
+    puts "I: current_head=#{if current_head then current_head.sha else "nil" end} p=#{p}" if DEBUG
     data[pkg] = p
   end
   data
