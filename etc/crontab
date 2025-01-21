@@ -1,1 +1,1 @@
-0,15,30,45 *     * * *     packages-www cd /var/www/packages.grml.org && chronic flock /var/www/packages.grml.org/git/lock ./packages.grml.org/update.rb
+0,15,30,45 *     * * *     packages-www cd /var/www/packages.grml.org && systemd-cat --identifier=packages-www-cron flock /var/www/packages.grml.org/git/lock ./packages.grml.org/update.rb
