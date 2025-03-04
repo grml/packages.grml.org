@@ -187,8 +187,8 @@ EOF
 
 used_packages = {
   :full => build_used_package_list([
-                                    'https://raw.githubusercontent.com/grml/grml-live/master/etc/grml/fai/config/package_config/GRMLBASE',
-                                    'https://raw.githubusercontent.com/grml/grml-live/master/etc/grml/fai/config/package_config/GRML_FULL',
+                                    'https://raw.githubusercontent.com/grml/grml-live/master/config/package_config/GRMLBASE',
+                                    'https://raw.githubusercontent.com/grml/grml-live/master/config/package_config/GRML_FULL',
                                    ]),
 }
 sources = {}
