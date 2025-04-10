@@ -154,7 +154,7 @@ template = ERB.new <<-EOF
 </head>
 <body>
   <header>
-  <h1>All Grml packages</h1>
+    <h1>All Grml packages</h1>
   </header>
   <div id="main">
   <table>
@@ -168,30 +168,45 @@ template = ERB.new <<-EOF
     <th>Debian testing</th>
     <th>In FULL?</th>
   </tr>
-  <% packages.keys.sort.each do |pn|
-  p = packages[pn]
+  <%
+    packages.keys.sort.each do |pn|
+      p = packages[pn]
   %>
-  <tr>
-  <td><%= p[:name] %></td>
-  <td class="git"><% if p[:git_browser] %><a href="<%= p[:git_browser] %>">Git</a><% end %></td>
-  <td class="download"><% if p[:repo_url] %><a href="<%= p[:repo_url] %>">Download</a><% end %></td>
-  <% if !p[:problem] %>
-  <td class="ok">Pass</td>
-  <% else %>
-  <td class="error <% if p[:used][:full] %>important<% end %>"><%= p[:problem] %></td>
-  <% end %>
-  <td><%= p[:git_version] || "??" %></td>
-  <td><%= p[:repo_version] || "" %></td>
-  <td><% if p[:debian_testing_version] %><a href="<%= p[:debian_tracker] %>"><%= p[:debian_testing_version] %></a><% end %></td>
-  <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
-  </tr>
+    <tr>
+      <td><%= p[:name] %></td>
+      <td class="git">
+        <% if p[:git_browser] %>
+          <a href="<%= p[:git_browser] %>">Git</a>
+        <% end %>
+      </td>
+      <td class="download">
+        <% if p[:repo_url] %>
+          <a href="<%= p[:repo_url] %>">Download</a>
+        <% end %>
+      </td>
+      <% if !p[:problem] %>
+        <td class="ok">Pass</td>
+      <% else %>
+        <td class="error <% if p[:used][:full] %>important<% end %>">
+          <%= p[:problem] %>
+        </td>
+      <% end %>
+      <td><%= p[:git_version] || "??" %></td>
+      <td><%= p[:repo_version] || "" %></td>
+      <td>
+        <% if p[:debian_testing_version] %>
+          <a href="<%= p[:debian_tracker] %>"><%= p[:debian_testing_version] %></a>
+        <% end %>
+      </td>
+      <td class="installed">
+        <%= p[:used][:full] ? "Yes" : "No" %>
+      </td>
+    </tr>
   <% end %>
   </table>
   </div>
-  <div>
-  </div>
   <footer>
-  <p>Last update: <%= Time.now.to_s %></p>
+    <p>Last update: <%= Time.now.to_s %></p>
   </footer>
 </body>
 </html>
