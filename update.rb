@@ -48,7 +48,7 @@ def parse_debian_sources(data)
   end
 end
 
-def build_package_list(repos, used, sources)
+def build_package_list(repos, used, sources, debian_testing)
   data = {}
   (repos.keys + sources.keys).each do |pkg|
     p = {
@@ -106,6 +106,12 @@ def build_package_list(repos, used, sources)
         :source_name => sources[pkg]['Package'][0],
       })
     end
+    if debian_testing[pkg]
+      p.merge!({
+        :debian_testing_version => debian_testing[pkg]['Version'][0],
+        :debian_tracker => "https://tracker.debian.org/pkg/#{pkg}",
+      })
+    end
 
     # Produce final problem assessment
     if not p[:problem]
@@ -153,7 +159,14 @@ template = ERB.new <<-EOF
   <div id="main">
   <table>
   <tr>
-  <th>Package</th><th>Git</th><th>Download</th><th>Status</th><th>Git</th><th>grml-testing</th><th>In FULL?</th>
+    <th>Package</th>
+    <th>Git</th>
+    <th>Download</th>
+    <th>Status</th>
+    <th>Git</th>
+    <th>grml-testing</th>
+    <th>Debian testing</th>
+    <th>In FULL?</th>
   </tr>
   <% packages.keys.sort.each do |pn|
   p = packages[pn]
@@ -169,6 +182,7 @@ template = ERB.new <<-EOF
   <% end %>
   <td><%= p[:git_version] || "??" %></td>
   <td><%= p[:repo_version] || "" %></td>
+  <td><% if p[:debian_testing_version] %><a href="<%= p[:debian_tracker] %>"><%= p[:debian_testing_version] %></a><% end %></td>
   <td class="installed"><%= p[:used][:full] ? "Yes" : "No" %></td>
   </tr>
   <% end %>
@@ -200,12 +214,16 @@ parse_debian_sources(fetch_file('https://deb.grml.org/dists/grml-testing/main/so
   end
   sources[k] = v
 end
+debian_testing = {}
+parse_debian_sources(fetch_file('https://deb.debian.org/debian/dists/testing/main/source/Sources.gz')).each do |k,v|
+  debian_testing[k] = v
+end
 
 git_repos = Hash[*(Dir.glob('git/*.git').map do |p| [File.basename(p, '.git'), p] end.flatten)]
 
 update_git_repos git_repos
 
-packages = build_package_list(git_repos, used_packages, sources)
+packages = build_package_list(git_repos, used_packages, sources, debian_testing)
 
 File.open('htdocs/index.html.new','w') do |f|
   f.write template.result(binding)
