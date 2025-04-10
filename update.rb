@@ -74,7 +74,7 @@ def build_package_list(repos, used, sources)
       raise "no debian dir in git" if not tree.keys.include?("debian")
     rescue Exception => error
       puts "E: inspecting git repo #{repos[pkg]} failed: #{error}"
-      p[:problem] = error
+      p[:problem] = error.to_s
     end
     puts "I: current_head=#{if current_head then current_head.sha else "nil" end} p=#{p}" if DEBUG
     if not p[:problem]
