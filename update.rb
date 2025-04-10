@@ -65,7 +65,9 @@ def build_package_list(repos, used, sources)
     # Collect data from git
     puts "I: inspecting git repo #{repos[pkg]} for pkg #{pkg}" if DEBUG
     begin
-      g = Git.bare(working_dir = repos[pkg])
+      repodir = repos[pkg]
+      raise "no checkout" if repodir.nil? or not File.directory?(repodir)
+      g = Git.bare(working_dir = repodir)
       tree = g.ls_tree('FETCH_HEAD')["tree"]
       current_head = g.gcommit('FETCH_HEAD')
       raise "no FETCH_HEAD" if not current_head.parent
