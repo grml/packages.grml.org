@@ -58,6 +58,8 @@ def build_package_list(repos, used, sources)
       :git_version => nil,
       :has_tags => false,
       :repo_version => nil,
+      :git_browser => "https://github.com/grml/%s" % pkg,
+      :git_anon => "https://github.com/grml/%s.git" % pkg,
     }
 
     puts "I: inspecting git repo #{repos[pkg]} for pkg #{pkg}" if DEBUG
@@ -67,12 +69,9 @@ def build_package_list(repos, used, sources)
       current_head = g.gcommit('FETCH_HEAD')
       raise "no FETCH_HEAD" if not current_head.parent
       raise "no debian dir in git" if not tree.keys.include?("debian")
-      p.merge!({
-        :git_browser => "https://github.com/grml/%s" % pkg,
-        :git_anon => "https://github.com/grml/%s.git" % pkg,
-      })
     rescue Exception => error
       puts "E: inspecting git repo #{repos[pkg]} failed: #{error}"
+      p[:problem] = error
     end
 
     used.each do |dist,l|
@@ -86,7 +85,7 @@ def build_package_list(repos, used, sources)
       })
     end
 
-    if p[:git_anon]
+    if not p[:problem]
       head_is_tagged = false
       for tag in g.tags.reverse
         p[:has_tags] = true
@@ -102,8 +101,6 @@ def build_package_list(repos, used, sources)
       if !head_is_tagged
         p[:problem] = 'Untagged changes'
       end
-    else
-      p[:problem] = 'Unknown (Missing checkout)'
     end
 
     if !p[:problem]
