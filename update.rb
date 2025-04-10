@@ -64,9 +64,6 @@ def build_package_list(repos, used, sources)
     begin
       g = Git.bare(working_dir = repos[pkg])
       tree = g.ls_tree('FETCH_HEAD')["tree"]
-      if pkg == 'grml-kernel'
-        tree = g.ls_tree(g.ls_tree("FETCH_HEAD")["tree"]["linux-3"][:sha])["tree"]
-      end
       current_head = g.gcommit('FETCH_HEAD')
       raise "no FETCH_HEAD" if not current_head.parent
       raise "no debian dir in git" if not tree.keys.include?("debian")
