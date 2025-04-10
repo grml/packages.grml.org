@@ -5,3 +5,4 @@ packages.yaml
 bundled
 vendor
 git/*
+httpcache

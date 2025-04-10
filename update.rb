@@ -1,13 +1,15 @@
 #!/usr/bin/env ruby
 require 'git'
+require 'digest'
 require 'erb'
-require 'yaml'
 require 'net/http'
 require 'uri'
 require 'zlib'
 require 'yaml'
 
 DEBUG = true
+HTTP_CACHE_DIR = File.join(Dir.pwd, 'httpcache')
+FileUtils.mkdir_p(HTTP_CACHE_DIR)
 
 def build_used_package_list(source_uri)
   source_uri.map do |source_uri|
@@ -128,16 +130,44 @@ def build_package_list(repos, used, sources, debian_testing)
   data
 end
 
-def fetch_file(uri)
-  response = Net::HTTP.get_response(URI.parse(uri))
-  body = response.body
-  if uri.match(/\.gz$/)
+def fetch_file(url)
+  headers = {}
+  puts "I: Fetching #{url}"
+
+  cache_key = Digest::SHA1.hexdigest(url)
+  cache_meta = File.join(HTTP_CACHE_DIR, "#{cache_key}.yaml")
+  cache_file = File.join(HTTP_CACHE_DIR, "#{cache_key}.data")
+  if File.exist?(cache_meta) and File.exist?(cache_file)
+    cache_data = YAML.load(File.read(cache_meta))
+    headers['If-None-Match'] = cache_data['etag'] if cache_data['etag']
+    headers['If-Modified-Since'] = cache_data['last_modified'] if cache_data['last_modified']
+  end
+
+  uri = URI.parse(url)
+  response = Net::HTTP.get_response(uri, headers=headers)
+
+  case response
+  when Net::HTTPSuccess
+    File.write(cache_file, response.body)
+    body = response.body
+    File.write(cache_meta, {
+      etag: response['ETag'],
+      last_modified: response['Last-Modified']
+    }.to_yaml)
+  when Net::HTTPNotModified
+    body = File.read(cache_file)
+  else
+    raise "HTTP Error: #{response.code} #{response.message}"
+  end
+
+  if url.match(/\.gz$/)
     body = Zlib::GzipReader.new(StringIO.new(body.to_s)).read
   end
   body
 end
 
 def update_git_repos(git_repos)
+  puts "I: Updating git repos"
   git_repos.each do |name, path|
     # Will update FETCH_HEAD and tags only.
     out = %x{cd #{path} && git fetch --force --prune --refmap='' origin '+HEAD' 'refs/tags/*:refs/tags/*' 2>&1}
