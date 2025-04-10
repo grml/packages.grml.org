@@ -62,6 +62,7 @@ def build_package_list(repos, used, sources)
       :git_anon => "https://github.com/grml/%s.git" % pkg,
     }
 
+    # Collect data from git
     puts "I: inspecting git repo #{repos[pkg]} for pkg #{pkg}" if DEBUG
     begin
       g = Git.bare(working_dir = repos[pkg])
@@ -73,18 +74,7 @@ def build_package_list(repos, used, sources)
       puts "E: inspecting git repo #{repos[pkg]} failed: #{error}"
       p[:problem] = error
     end
-
-    used.each do |dist,l|
-      p[:used][dist] = l.include?(pkg)
-    end
-    if sources[pkg]
-      p.merge!({
-        :repo_url => "https://deb.grml.org/pool/main/%s/%s/" % [sources[pkg]['Package'][0][0..0], sources[pkg]['Package'][0]],
-        :repo_version => sources[pkg]['Version'][0],
-        :source_name => sources[pkg]['Package'][0],
-      })
-    end
-
+    puts "I: current_head=#{if current_head then current_head.sha else "nil" end} p=#{p}" if DEBUG
     if not p[:problem]
       head_is_tagged = false
       for tag in g.tags.reverse
@@ -103,7 +93,20 @@ def build_package_list(repos, used, sources)
       end
     end
 
-    if !p[:problem]
+    # Collect data from package lists
+    used.each do |dist,l|
+      p[:used][dist] = l.include?(pkg)
+    end
+    if sources[pkg]
+      p.merge!({
+        :repo_url => "https://deb.grml.org/pool/main/%s/%s/" % [sources[pkg]['Package'][0][0..0], sources[pkg]['Package'][0]],
+        :repo_version => sources[pkg]['Version'][0],
+        :source_name => sources[pkg]['Package'][0],
+      })
+    end
+
+    # Produce final problem assessment
+    if not p[:problem]
       if p[:git_version] and p[:repo_version]
         repo_version = p[:repo_version].gsub('~','_')
         if (p[:git_version] != repo_version) and (p[:git_version] != 'v'+repo_version)
@@ -112,7 +115,6 @@ def build_package_list(repos, used, sources)
       end
     end
 
-    puts "I: current_head=#{if current_head then current_head.sha else "nil" end} p=#{p}" if DEBUG
     data[pkg] = p
   end
   data
